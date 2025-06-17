@@ -1,4 +1,5 @@
 #include "flutter_blue_plus_windows_plugin.h"
+#include "winrt/Windows.Devices.Radios.h"
 
 #include <windows.h>
 #include <VersionHelpers.h>
@@ -16,6 +17,7 @@
 using namespace winrt;
 using namespace Windows::Foundation;
 using namespace Windows::Devices::Enumeration;
+using namespace Windows::Devices::Radios;
 
 namespace flutter_blue_plus_windows {
 enum LogLevel {
@@ -29,7 +31,6 @@ enum LogLevel {
 
 LogLevel current_log_level = LNONE;
 
-// static
 void FlutterBluePlusWindowsPlugin::RegisterWithRegistrar(
     flutter::PluginRegistrarWindows *registrar) {
   auto channel =
@@ -100,25 +101,50 @@ fire_and_forget GetSystemDevicesAsync(std::unique_ptr<flutter::MethodResult<flut
     co_return;
 }
 
+fire_and_forget GetAdapterStateAsync(std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
+     try {
+         enum class AdapterState {
+           Unknown = 0,
+           On = 4,
+           Off = 6
+         };
+         auto radios = co_await Radio::GetRadiosAsync();
+         std::string adapter_name = "";
+         int adapter_state = 0;
+         for (auto radio : radios) {
+             if (radio.Kind() != RadioKind::Bluetooth) continue;
+             adapter_name = to_string(radio.Name());
+             switch (radio.State()) {
+                 case RadioState::On:
+                     adapter_state = static_cast<int>(AdapterState::On);
+                     break;
+                 case RadioState::Off:
+                     adapter_state = static_cast<int>(AdapterState::Off);
+                     break;
+                 default:
+                     adapter_state = static_cast<int>(AdapterState::Unknown);
+                     break;
+             }
+             break;
+         }
+         flutter::EncodableMap response = {};
+         response[flutter::EncodableValue("adapter_state")] = flutter::EncodableValue(adapter_state);
+         response[flutter::EncodableValue("adapter_name")] = flutter::EncodableValue(adapter_name);
+         result->Success(flutter::EncodableValue(response));
+     } catch (const hresult_error& e) {
+         result->Error("getAdapterState", to_string(e.message()));
+     } catch (const std::exception& e) {
+         result->Error("getAdapterState", e.what());
+     }
+    co_return;
+}
+
 void FlutterBluePlusWindowsPlugin::HandleMethodCall(
     const flutter::MethodCall<flutter::EncodableValue> &method_call,
     std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
   const auto& method = method_call.method_name();
 
   if (method == "setLogLevel") {
-    // const auto& arguments = std::get<flutter::EncodableMap>(*method_call.arguments());
-    // auto log_level_it = arguments.find(flutter::EncodableValue("logLevel"));
-    // if (log_level_it != arguments.end() && log_level_it->second.IsInt()) {
-    //   int log_level = std::get<int>(log_level_it->second);
-    //   if (log_level >= LNONE && log_level <= LVERBOSE) {
-    //     current_log_level = static_cast<LogLevel>(log_level);
-    //     result->Success();
-    //   } else {
-    //     result->Error("InvalidLogLevel", "The provided log level is out of range.");
-    //   }
-    // } else {
-    //   result->Error("InvalidArguments", "Expected an integer log level.");
-    // }
     return;
   }
 
@@ -138,6 +164,12 @@ void FlutterBluePlusWindowsPlugin::HandleMethodCall(
   }
 
   if (method == "getAdapterState") {
+     try {
+       GetAdapterStateAsync(std::move(result));
+     } catch (const std::exception& e) {
+       result->Error("getAdapterState", e.what());
+     }
+    return;
   }
 
   if (method == "startScan") {
