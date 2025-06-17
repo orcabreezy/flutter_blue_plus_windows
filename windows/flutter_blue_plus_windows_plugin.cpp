@@ -145,21 +145,23 @@ void FlutterBluePlusWindowsPlugin::HandleMethodCall(
     std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
   const auto& method = method_call.method_name();
 
-  if (method == "setLogLevel") {
-    return;
+  if (method == "flutterRestart") {
+    std::cout << "flutterRestart" << std::endl;
+//    result->Success(0);
+//    return;
   }
 
   if (method == "setOptions") {
   }
 
-  if (method == "flutterRestart") {
+  if (method == "connectedCount") {
+    std::cout << "connectedCount" << std::endl;
 //    result->Success(0);
 //    return;
   }
 
-  if (method == "connectedCount") {
-//    result->Success(0);
-//    return;
+  if (method == "setLogLevel") {
+    return;
   }
 
   if (method == "isSupported") {
@@ -175,6 +177,14 @@ void FlutterBluePlusWindowsPlugin::HandleMethodCall(
        result->Error("getAdapterState", e.what());
      }
     return;
+  }
+
+  if (method == "turnOn") {
+
+  }
+
+  if (method == "turnOff") {
+
   }
 
   if (method == "startScan") {
@@ -200,6 +210,51 @@ void FlutterBluePlusWindowsPlugin::HandleMethodCall(
   }
 
   if (method == "discoverServices") {
+  }
+
+  if (method == "readCharacteristic") {
+  }
+
+  if (method == "writeCharacteristic") {
+  }
+
+  if (method == "readDescriptor") {
+  }
+
+  if (method == "writeDescriptor") {
+  }
+
+  if (method == "setNotifyValue") {
+  }
+
+  if (method == "requestMtu") {
+  }
+
+  if (method == "readRssi") {
+  }
+
+  if (method == "requestConnectionPriority") {
+  }
+
+  if (method == "getPhySupport") {
+  }
+
+  if (method == "setPreferredPhy") {
+  }
+
+  if (method == "getBondedDevices") {
+  }
+
+  if (method == "getBondState") {
+  }
+
+  if (method == "createBond") {
+  }
+
+  if (method == "removeBond") {
+  }
+
+  if (method == "clearGattCache") {
   }
 
   result->NotImplemented();
