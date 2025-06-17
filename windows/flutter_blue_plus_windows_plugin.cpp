@@ -154,12 +154,12 @@ void FlutterBluePlusWindowsPlugin::HandleMethodCall(
 
   if (method == "flutterRestart") {
 //    result->Success(0);
-    return;
+//    return;
   }
 
   if (method == "connectedCount") {
 //    result->Success(0);
-    return;
+//    return;
   }
 
   if (method == "isSupported") {
