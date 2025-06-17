@@ -20,7 +20,7 @@ using namespace Windows::Devices::Enumeration;
 using namespace Windows::Devices::Radios;
 
 namespace flutter_blue_plus_windows {
-enum LogLevel {
+enum class LogLevel {
   LNONE = 0,
   LERROR = 1,
   LWARNING = 2,
@@ -29,7 +29,13 @@ enum LogLevel {
   LVERBOSE = 5,
 };
 
-LogLevel current_log_level = LNONE;
+enum class AdapterState {
+  Unknown = 0,
+  On = 4,
+  Off = 6,
+};
+
+LogLevel current_log_level = LogLevel::LNONE;
 
 void FlutterBluePlusWindowsPlugin::RegisterWithRegistrar(
     flutter::PluginRegistrarWindows *registrar) {
@@ -103,11 +109,6 @@ fire_and_forget GetSystemDevicesAsync(std::unique_ptr<flutter::MethodResult<flut
 
 fire_and_forget GetAdapterStateAsync(std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
      try {
-         enum class AdapterState {
-           Unknown = 0,
-           On = 4,
-           Off = 6
-         };
          auto radios = co_await Radio::GetRadiosAsync();
          std::string adapter_name = "";
          int adapter_state = 0;
@@ -152,9 +153,13 @@ void FlutterBluePlusWindowsPlugin::HandleMethodCall(
   }
 
   if (method == "flutterRestart") {
+//    result->Success(0);
+    return;
   }
 
   if (method == "connectedCount") {
+//    result->Success(0);
+    return;
   }
 
   if (method == "isSupported") {
