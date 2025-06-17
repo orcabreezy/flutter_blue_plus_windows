@@ -76,6 +76,8 @@ fire_and_forget GetSystemDevicesAsync(std::unique_ptr<flutter::MethodResult<flut
           }
           std::string full_id = to_string(deviceInfo.Id());
           std::string remote_id = full_id.substr(full_id.find_last_of('-') + 1);
+          std::transform(remote_id.begin(), remote_id.end(), remote_id.begin(),
+            [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
           deviceMap[flutter::EncodableValue("remote_id")] = flutter::EncodableValue(remote_id);
           deviceMap[flutter::EncodableValue("platform_name")] = flutter::EncodableValue(name);
           deviceList.push_back(flutter::EncodableValue(deviceMap));
