@@ -13,6 +13,10 @@
 #include <string>
 #include <vector>
 
+using namespace winrt;
+using namespace Windows::Foundation;
+using namespace Windows::Devices::Enumeration;
+
 namespace flutter_blue_plus_windows {
 enum LogLevel {
   LNONE = 0,
@@ -50,8 +54,13 @@ FlutterBluePlusWindowsPlugin::~FlutterBluePlusWindowsPlugin() {}
 fire_and_forget GetSystemDevicesAsync(std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
     try {
       auto selector = BluetoothDevice::GetDeviceSelector();
-      DeviceInformationCollection deviceInfoCollection = co_await DeviceInformation::FindAllAsync(selector);
+      auto additionalProperties = winrt::single_threaded_vector<winrt::hstring>();
+      additionalProperties.Append(L"System.Devices.Aep.IsConnected");
+      additionalProperties.Append(L"System.Devices.Aep.SignalStrength");
+      additionalProperties.Append(L"System.Devices.Aep.IsPaired");
+      additionalProperties.Append(L"System.Devices.Aep.DeviceAddress");
 
+      DeviceInformationCollection deviceInfoCollection = co_await DeviceInformation::FindAllAsync(selector, additionalProperties);
       flutter::EncodableMap response = {};
       flutter::EncodableList deviceList;
 
@@ -60,19 +69,16 @@ fire_and_forget GetSystemDevicesAsync(std::unique_ptr<flutter::MethodResult<flut
           auto properties = deviceInfo.Properties();
           flutter::EncodableMap deviceMap = {};
           std::string name = to_string(deviceInfo.Name());
-          std::cout<<name<<std::endl;
-          std::cout<<properties.HasKey(L"System.Devices.Aep.IsConnected")<<std::endl;
-//          if (properties.HasKey(L"System.Devices.Aep.IsConnected") &&
-//              unbox_value<bool>(properties.Lookup(L"System.Devices.Aep.IsConnected"))) {
-            if (name.empty() && properties.HasKey(L"System.Devices.Aep.DeviceAddress")) {
-              name = to_string(unbox_value<hstring>(properties.Lookup(L"System.Devices.Aep.DeviceAddress")));
-            }
-            std::string full_id = to_string(deviceInfo.Id());
-            std::string remote_id = full_id.substr(full_id.find_last_of('-') + 1);
-            deviceMap[flutter::EncodableValue("remote_id")] = flutter::EncodableValue(remote_id);
-            deviceMap[flutter::EncodableValue("platform_name")] = flutter::EncodableValue(name);
-            deviceList.push_back(flutter::EncodableValue(deviceMap));
-//          }
+          if (!properties.HasKey(L"System.Devices.Aep.IsConnected") ||
+              !unbox_value<bool>(properties.Lookup(L"System.Devices.Aep.IsConnected"))) continue;
+          if (name.empty() && properties.HasKey(L"System.Devices.Aep.DeviceAddress")) {
+            name = to_string(unbox_value<hstring>(properties.Lookup(L"System.Devices.Aep.DeviceAddress")));
+          }
+          std::string full_id = to_string(deviceInfo.Id());
+          std::string remote_id = full_id.substr(full_id.find_last_of('-') + 1);
+          deviceMap[flutter::EncodableValue("remote_id")] = flutter::EncodableValue(remote_id);
+          deviceMap[flutter::EncodableValue("platform_name")] = flutter::EncodableValue(name);
+          deviceList.push_back(flutter::EncodableValue(deviceMap));
         } catch (const hresult_error& e) {
           OutputDebugStringW(L"Error processing device: ");
           OutputDebugStringW(e.message().c_str());
