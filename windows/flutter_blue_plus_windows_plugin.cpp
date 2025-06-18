@@ -140,6 +140,25 @@ fire_and_forget GetAdapterStateAsync(std::unique_ptr<flutter::MethodResult<flutt
     co_return;
 }
 
+fire_and_forget GetAdapterNameAsync(std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
+    try {
+        auto radios = co_await Radio::GetRadiosAsync();
+        std::string adapter_name = "";
+        for (auto radio : radios) {
+            if (radio.Kind() == RadioKind::Bluetooth) {
+                adapter_name = to_string(radio.Name());
+                break;
+            }
+        }
+        result->Success(flutter::EncodableValue(adapter_name));
+    } catch (const hresult_error& e) {
+        result->Error("getAdapterName", to_string(e.message()));
+    } catch (const std::exception& e) {
+        result->Error("getAdapterName", e.what());
+    }
+    co_return;
+}
+
 void FlutterBluePlusWindowsPlugin::HandleMethodCall(
     const flutter::MethodCall<flutter::EncodableValue> &method_call,
     std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
@@ -215,6 +234,12 @@ void FlutterBluePlusWindowsPlugin::HandleMethodCall(
   }
 
   if (method == "getAdapterName") {
+    try {
+      GetAdapterNameAsync(std::move(result));
+    } catch (const std::exception& e) {
+      result->Error("getAdapterName", e.what());
+    }
+    return;
   }
 
   if (method == "getAdapterState") {
