@@ -161,9 +161,57 @@ void FlutterBluePlusWindowsPlugin::HandleMethodCall(
   }
 
   if (method == "setLogLevel") {
+    const auto* arguments = std::get_if<int>(method_call.arguments());
+    if (arguments == nullptr) {
+      result->Error("setLogLevel", "Invalid argument type");
+      return;
+    }
+    int level = *arguments;
+    switch (level) {
+      case 0:
+        current_log_level = LogLevel::LNONE;
+        break;
+      case 1:
+        current_log_level = LogLevel::LERROR;
+        break;
+      case 2:
+        current_log_level = LogLevel::LWARNING;
+        break;
+      case 3:
+        current_log_level = LogLevel::LINFO;
+        break;
+      case 4:
+        current_log_level = LogLevel::LDEBUG;
+        break;
+      case 5:
+        current_log_level = LogLevel::LVERBOSE;
+        break;
+      default:
+        current_log_level = LogLevel::LNONE;
+        break;
+    }
+    result->Success(true);
+    return;
   }
 
   if (method == "isSupported") {
+    try {
+      auto radios_op = Radio::GetRadiosAsync();
+      auto radios = radios_op.get();
+      bool supported = false;
+      for (auto radio : radios) {
+        if (radio.Kind() == RadioKind::Bluetooth) {
+          supported = true;
+          break;
+        }
+      }
+      result->Success(flutter::EncodableValue(supported));
+    } catch (const hresult_error& e) {
+      result->Error("isSupported", to_string(e.message()));
+    } catch (const std::exception& e) {
+      result->Error("isSupported", e.what());
+    }
+    return;
   }
 
   if (method == "getAdapterName") {
