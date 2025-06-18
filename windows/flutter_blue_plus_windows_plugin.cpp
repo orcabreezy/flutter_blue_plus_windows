@@ -159,6 +159,54 @@ fire_and_forget GetAdapterNameAsync(std::unique_ptr<flutter::MethodResult<flutte
     co_return;
 }
 
+fire_and_forget StartScanAsync(std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
+    try {
+        auto selector = BluetoothDevice::GetDeviceSelector();
+        auto additionalProperties = winrt::single_threaded_vector<winrt::hstring>();
+        additionalProperties.Append(L"System.Devices.Aep.IsConnected");
+        additionalProperties.Append(L"System.Devices.Aep.SignalStrength");
+        additionalProperties.Append(L"System.Devices.Aep.IsPaired");
+        additionalProperties.Append(L"System.Devices.Aep.DeviceAddress");
+
+        DeviceInformationCollection deviceInfoCollection = co_await DeviceInformation::FindAllAsync(selector, additionalProperties);
+
+        flutter::EncodableList deviceList;
+
+        for (auto&& deviceInfo : deviceInfoCollection) {
+            try {
+                auto properties = deviceInfo.Properties();
+                flutter::EncodableMap deviceMap = {};
+                std::string name = to_string(deviceInfo.Name());
+                if (name.empty() && properties.HasKey(L"System.Devices.Aep.DeviceAddress")) {
+                    name = to_string(unbox_value<hstring>(properties.Lookup(L"System.Devices.Aep.DeviceAddress")));
+                }
+                std::string full_id = to_string(deviceInfo.Id());
+                std::string remote_id = full_id.substr(full_id.find_last_of('-') + 1);
+                std::transform(remote_id.begin(), remote_id.end(), remote_id.begin(),
+                    [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
+                deviceMap[flutter::EncodableValue("remote_id")] = flutter::EncodableValue(remote_id);
+                deviceMap[flutter::EncodableValue("platform_name")] = flutter::EncodableValue(name);
+                deviceList.push_back(flutter::EncodableValue(deviceMap));
+            } catch (const hresult_error& e) {
+                OutputDebugStringW(L"Error processing device in scan: ");
+                OutputDebugStringW(e.message().c_str());
+                OutputDebugStringW(L"\n");
+            } catch (const std::exception& e) {
+                std::cout << e.what() << std::endl;
+            }
+        }
+
+        flutter::EncodableMap response = {};
+        response[flutter::EncodableValue("devices")] = deviceList;
+        result->Success(flutter::EncodableValue(response));
+    } catch (const hresult_error& e) {
+        result->Error("startScan", to_string(e.message()));
+    } catch (const std::exception& e) {
+        result->Error("startScan", e.what());
+    }
+    co_return;
+}
+
 void FlutterBluePlusWindowsPlugin::HandleMethodCall(
     const flutter::MethodCall<flutter::EncodableValue> &method_call,
     std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
@@ -252,15 +300,22 @@ void FlutterBluePlusWindowsPlugin::HandleMethodCall(
   }
 
   if (method == "turnOn") {
-
+    result->Success(flutter::EncodableValue(false));
+    return;
   }
 
   if (method == "turnOff") {
-
+    result->Success(flutter::EncodableValue(true));
+    return;
   }
 
   if (method == "startScan") {
-
+    try {
+      StartScanAsync(std::move(result));
+    } catch (const std::exception& e) {
+      result->Error("startScan", e.what());
+    }
+    return;
   }
 
   if (method == "stopScan") {
