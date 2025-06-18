@@ -146,22 +146,21 @@ void FlutterBluePlusWindowsPlugin::HandleMethodCall(
   const auto& method = method_call.method_name();
 
   if (method == "flutterRestart") {
-    std::cout << "flutterRestart" << std::endl;
-//    result->Success(0);
-//    return;
+    result->Success(0);
+    return;
   }
 
   if (method == "setOptions") {
+      result->Success(true);
+      return;
   }
 
   if (method == "connectedCount") {
-    std::cout << "connectedCount" << std::endl;
-//    result->Success(0);
-//    return;
+    result->Success(0);
+    return;
   }
 
   if (method == "setLogLevel") {
-    return;
   }
 
   if (method == "isSupported") {
