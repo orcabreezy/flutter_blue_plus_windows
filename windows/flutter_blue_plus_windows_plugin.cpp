@@ -186,6 +186,14 @@ fire_and_forget StartScanAsync(std::unique_ptr<flutter::MethodResult<flutter::En
                     [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
                 deviceMap[flutter::EncodableValue("remote_id")] = flutter::EncodableValue(remote_id);
                 deviceMap[flutter::EncodableValue("platform_name")] = flutter::EncodableValue(name);
+                if (properties.HasKey(L"System.Devices.Aep.SignalStrength")) {
+                    int rssi = unbox_value<int>(properties.Lookup(L"System.Devices.Aep.SignalStrength"));
+                    deviceMap[flutter::EncodableValue("rssi")] = flutter::EncodableValue(rssi);
+                }
+                if (properties.HasKey(L"System.Devices.Aep.IsPaired")) {
+                    bool paired = unbox_value<bool>(properties.Lookup(L"System.Devices.Aep.IsPaired"));
+                    deviceMap[flutter::EncodableValue("is_paired")] = flutter::EncodableValue(paired);
+                }
                 deviceList.push_back(flutter::EncodableValue(deviceMap));
             } catch (const hresult_error& e) {
                 OutputDebugStringW(L"Error processing device in scan: ");
