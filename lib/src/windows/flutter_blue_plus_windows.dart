@@ -57,16 +57,30 @@ class FlutterBluePlusWindows {
   static final _connectionStream =
       _StreamController(initialValue: <String, bool>{});
 
-  static Future<FbpIsolateActivator> prepareIsolateActivation() async {
-    final path = 'packages/flutter_blue_plus_windows/assets/BLEServer.exe';
-    final byteData = await rootBundle.load(path);
+  /// Get a FbpIsolateActivator object to pass to an isolate and then making
+  /// the library there availble through [activateIsolate].
+  ///
+  /// **Only** call this function from the root isolate!
+  static Future<IsolateActivator> prepareIsolateActivation() async {
+    try {
+      final path = 'packages/flutter_blue_plus_windows/assets/BLEServer.exe';
+      final byteData = await rootBundle.load(path);
+      final rit = RootIsolateToken.instance!;
 
-    return FbpIsolateActivator(byteData);
+      return IsolateActivator(byteData, rit);
+    } catch (e) {
+      throw Exception(
+          'prepare isolate activation failed with $e. likely it was called from a non-root isolate');
+    }
   }
 
-  static FbpIsolateActivator? _activator;
+  /// The non-root Isolate activator object.
+  static IsolateActivator? _activator;
 
-  static activateIsolate(FbpIsolateActivator activator) {
+  /// Initialize the library for a non-root Isolate. Use [prepareIsolateActivation] first
+  /// to receive a [IsolateActivator]. Pass it to the background-isolate and then call
+  /// this function to initialize the background isolate properly for bluetooth functionality.
+  static activateIsolate(IsolateActivator activator) {
     _activator = activator;
   }
 
@@ -75,13 +89,22 @@ class FlutterBluePlusWindows {
 
     // check if it should run in isolated mode
     if (_activator != null) {
+      // initialize the background isolate binary messenger, if not already.
+      // this is necessary to use getTemporaryDirectory() later.
+      BackgroundIsolateBinaryMessenger.ensureInitialized(_activator!.rit);
+
+      // get the bytes of the executable file
       final bytes = _activator!.bytes;
 
+      // get the path to a temporary directory
       String tempPath = (await getTemporaryDirectory()).path;
+
+      // copy the executable-file's bytes to this temp-folder as 'BLEServer.exe'
       var filePath = path.join(tempPath, 'BLEServer.exe');
       await File(filePath).writeAsBytes(
           bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes));
 
+      // initialize the WinBle library with this file.
       await WinBle.initialize(serverPath: filePath, enableLog: false);
     } else {
       // otherwise just run in 'normal' mode
@@ -420,10 +443,4 @@ class FlutterBluePlusWindows {
     await _initialize();
     return await WinBle.bleState.asBroadcastStream().first == BleState.On;
   }
-}
-
-class FbpIsolateActivator {
-  final ByteData bytes;
-
-  FbpIsolateActivator(this.bytes);
 }
