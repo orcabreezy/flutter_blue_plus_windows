@@ -92,13 +92,14 @@ class FlutterBluePlusWindows {
       File(filePath).writeAsBytes(
           bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes));
 
-      WinBle.initialize(serverPath: filePath, enableLog: false);
+      await WinBle.initialize(serverPath: filePath, enableLog: false);
+    } else {
+      // otherwise just run in 'normal' mode
+      await WinBle.initialize(
+        serverPath: await WinServer.path(),
+        enableLog: false,
+      );
     }
-
-    await WinBle.initialize(
-      serverPath: await WinServer.path(),
-      enableLog: false,
-    );
 
     WinBle.connectionStream.listen(
       (event) {
