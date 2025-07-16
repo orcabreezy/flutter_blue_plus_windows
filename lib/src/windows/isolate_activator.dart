@@ -1,4 +1,4 @@
-import 'package:flutter/services.dart';
+part of 'windows.dart';
 
 /// An [IsolateActivator] encapuslates information to make
 /// the library's initialization also available for non-root

@@ -13,3 +13,4 @@ part 'flutter_blue_plus_windows.dart';
 part 'bluetooth_device_windows.dart';
 part 'bluetooth_service_windows.dart';
 part 'util.dart';
+part 'isolate_activator.dart';
