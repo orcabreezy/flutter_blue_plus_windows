@@ -12,16 +12,21 @@ class FlutterBluePlusWindows {
   static final _platformNames = <DeviceIdentifier, String>{};
   static final _advNames = <DeviceIdentifier, String>{};
   static final _rssiMap = <DeviceIdentifier, int?>{};
-  static final _knownServices = <DeviceIdentifier, List<BluetoothServiceWindows>>{};
+  static final _knownServices =
+      <DeviceIdentifier, List<BluetoothServiceWindows>>{};
   static final Map<DeviceIdentifier, Map<String, List<int>>> _lastChrs = {};
   static final Map<DeviceIdentifier, Map<String, bool>> _isNotifying = {};
-  static final Map<DeviceIdentifier, Map<String, List<BluetoothCharacteristic>>> _characteristicCache = {};
-  static final Map<DeviceIdentifier, List<StreamSubscription>> _deviceSubscriptions = {};
-  static final Map<DeviceIdentifier, List<StreamSubscription>> _delayedSubscriptions = {};
+  static final Map<DeviceIdentifier, Map<String, List<BluetoothCharacteristic>>>
+      _characteristicCache = {};
+  static final Map<DeviceIdentifier, List<StreamSubscription>>
+      _deviceSubscriptions = {};
+  static final Map<DeviceIdentifier, List<StreamSubscription>>
+      _delayedSubscriptions = {};
   static final List<StreamSubscription> _scanSubscriptions = [];
 
   // stream used for the scanResults public api
-  static final _scanResultsList = _StreamController(initialValue: <ScanResult>[]);
+  static final _scanResultsList =
+      _StreamController(initialValue: <ScanResult>[]);
 
   // the subscription to the scan results stream
   static StreamSubscription<BleDevice?>? _scanSubscription;
@@ -32,22 +37,64 @@ class FlutterBluePlusWindows {
   static List<BluetoothDeviceWindows> get _devices => [..._deviceSet];
 
   static final _deviceSet = <BluetoothDeviceWindows>{};
-  static final _removedDeviceTracer = <BluetoothDeviceWindows, StreamSubscription>{};
+  static final _removedDeviceTracer =
+      <BluetoothDeviceWindows, StreamSubscription>{};
 
   // static final _unhandledDeviceSet = <BluetoothDeviceWindows>{};
 
   /// Flutter blue plus windows
-  static final _charReadWriteStreamController = StreamController<(String, List<int>)>();
-  static final _charReadStreamController = StreamController<(String, List<int>)>();
+  static final _charReadWriteStreamController =
+      StreamController<(String, List<int>)>();
+  static final _charReadStreamController =
+      StreamController<(String, List<int>)>();
 
-  static final _charReadWriteStream = _charReadWriteStreamController.stream.asBroadcastStream();
-  static final _charReadStream = _charReadStreamController.stream.asBroadcastStream();
+  static final _charReadWriteStream =
+      _charReadWriteStreamController.stream.asBroadcastStream();
+  static final _charReadStream =
+      _charReadStreamController.stream.asBroadcastStream();
 
   /// Flutter blue plus windows
-  static final _connectionStream = _StreamController(initialValue: <String, bool>{});
+  static final _connectionStream =
+      _StreamController(initialValue: <String, bool>{});
+
+  static Future<FbpIsolateActivator> prepareIsolateActivation() async {
+    final path = 'packages/flutter_blue_plus_windows/assets/BLEServer.exe';
+    final byteData = await rootBundle.load(path);
+
+    return FbpIsolateActivator(byteData);
+  }
+
+  static FbpIsolateActivator? _activator;
+
+  static activateIsolate(FbpIsolateActivator activator) {
+    _activator = activator;
+  }
 
   static Future<void> _initialize() async {
     if (_initialized) return;
+
+    // final scriptUri = Platform.script;
+    // final scriptPath = scriptUri.toFilePath(windows: Platform.isWindows);
+    // final libRoot = path.dirname(scriptPath);
+    // const executableName = 'BLEServer.exe';
+    // final exePath = path.join(libRoot, 'temp', executableName);
+    // final exe = File(exePath);
+    // if (!await exe.exists()) {
+    //   final bytes = await rootBundle.load('packages/win_ble/assets/');
+    // }
+
+    // check if it should run in isolated mode
+    if (_activator != null) {
+      final bytes = _activator!.bytes;
+
+      String tempPath = (await getTemporaryDirectory()).path;
+      var filePath = path.join(tempPath, 'BLEServer.exe');
+      File(filePath).writeAsBytes(
+          bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes));
+
+      WinBle.initialize(serverPath: filePath, enableLog: false);
+    }
+
     await WinBle.initialize(
       serverPath: await WinServer.path(),
       enableLog: false,
@@ -74,9 +121,11 @@ class FlutterBluePlusWindows {
           for (final device in removingDevices) {
             _deviceSet.remove(device);
             if (!_removedDeviceTracer.keys.contains(device)) {
-              _removedDeviceTracer[device] = Stream.periodic(const Duration(seconds: 10), (_) => device).listen(
+              _removedDeviceTracer[device] =
+                  Stream.periodic(const Duration(seconds: 10), (_) => device)
+                      .listen(
                 (event) {
-                  if(event.isConnected) {
+                  if (event.isConnected) {
                     _removedDeviceTracer[device]?.cancel();
                     _removedDeviceTracer.remove(device);
                     return;
@@ -90,7 +139,8 @@ class FlutterBluePlusWindows {
             _deviceSubscriptions.remove(device.remoteId);
             // use delayed to update the stream before we cancel it
             Future.delayed(Duration.zero).then((_) {
-              _delayedSubscriptions[device.remoteId]?.forEach((s) => s.cancel());
+              _delayedSubscriptions[device.remoteId]
+                  ?.forEach((s) => s.cancel());
               _delayedSubscriptions.remove(device.remoteId);
             });
 
@@ -202,7 +252,8 @@ class FlutterBluePlusWindows {
     // check every 250ms for gone devices?
     late Stream<BleDevice?> outputStream;
     if (removeIfGone != null) {
-      outputStream = _mergeStreams([WinBle.scanStream, Stream.periodic(Duration(milliseconds: 250))]);
+      outputStream = _mergeStreams(
+          [WinBle.scanStream, Stream.periodic(Duration(milliseconds: 250))]);
     } else {
       outputStream = WinBle.scanStream;
     }
@@ -215,22 +266,30 @@ class FlutterBluePlusWindows {
         // print(winBleDevice?.serviceUuids);
         if (winBleDevice == null) {
           // if null, this is just a periodic update for removing old results
-          output.removeWhere((elm) => DateTime.now().difference(elm.timeStamp) > removeIfGone!);
+          output.removeWhere((elm) =>
+              DateTime.now().difference(elm.timeStamp) > removeIfGone!);
 
           // push to stream
           _scanResultsList.add(List.from(output));
         } else {
           final remoteId = DeviceIdentifier(winBleDevice.address.toUpperCase());
-          final scanResult = output.where((sr) => sr.device.remoteId == remoteId).firstOrNull;
-          final deviceName = winBleDevice.name.isNotEmpty ? winBleDevice.name : scanResult?.device.platformName ?? '';
+          final scanResult =
+              output.where((sr) => sr.device.remoteId == remoteId).firstOrNull;
+          final deviceName = winBleDevice.name.isNotEmpty
+              ? winBleDevice.name
+              : scanResult?.device.platformName ?? '';
           final serviceUuids = winBleDevice.serviceUuids.isNotEmpty
-              ? [...winBleDevice.serviceUuids.map((e) => Guid((e as String).replaceAll(RegExp(r'[{}]'), '')))]
+              ? [
+                  ...winBleDevice.serviceUuids.map((e) =>
+                      Guid((e as String).replaceAll(RegExp(r'[{}]'), '')))
+                ]
               : scanResult?.advertisementData.serviceUuids ?? [];
 
           final manufacturerData = winBleDevice.manufacturerData.isNotEmpty
               ? {
                   if (winBleDevice.manufacturerData.length >= 2)
-                    winBleDevice.manufacturerData[0] + (winBleDevice.manufacturerData[1] << 8):
+                    winBleDevice.manufacturerData[0] +
+                            (winBleDevice.manufacturerData[1] << 8):
                         winBleDevice.manufacturerData.sublist(2),
                 }
               : scanResult?.advertisementData.manufacturerData ?? {};
@@ -244,26 +303,40 @@ class FlutterBluePlusWindows {
           final device = BluetoothDeviceWindows(remoteId: remoteId);
 
           String hex(int value) => value.toRadixString(16).padLeft(2, '0');
-          String hexToId(Iterable<int> values) => values.map((e) => hex(e)).join();
+          String hexToId(Iterable<int> values) =>
+              values.map((e) => hex(e)).join();
 
           final sr = ScanResult(
             device: device,
             advertisementData: AdvertisementData(
               advName: deviceName,
-              txPowerLevel: winBleDevice.adStructures?.where((e) => e.type == 10).singleOrNull?.data.firstOrNull,
+              txPowerLevel: winBleDevice.adStructures
+                  ?.where((e) => e.type == 10)
+                  .singleOrNull
+                  ?.data
+                  .firstOrNull,
               //TODO: Should verify
               connectable: !winBleDevice.advType.contains('Non'),
               manufacturerData: manufacturerData,
               serviceData: {
-                for (final advStructures in winBleDevice.adStructures ?? <AdStructure>[])
-                  if (advStructures.type == 0x16 && advStructures.data.length >= 2)
-                    Guid(hexToId(advStructures.data.sublist(0, 2).reversed)): advStructures.data.sublist(2),
-                for (final advStructures in winBleDevice.adStructures ?? <AdStructure>[])
-                  if (advStructures.type == 0x20 && advStructures.data.length >= 4)
-                    Guid(hexToId(advStructures.data.sublist(0, 4).reversed)): advStructures.data.sublist(4),
-                for (final advStructures in winBleDevice.adStructures ?? <AdStructure>[])
-                  if (advStructures.type == 0x21 && advStructures.data.length >= 16)
-                    Guid(hexToId(advStructures.data.sublist(0, 16).reversed)): advStructures.data.sublist(16),
+                for (final advStructures
+                    in winBleDevice.adStructures ?? <AdStructure>[])
+                  if (advStructures.type == 0x16 &&
+                      advStructures.data.length >= 2)
+                    Guid(hexToId(advStructures.data.sublist(0, 2).reversed)):
+                        advStructures.data.sublist(2),
+                for (final advStructures
+                    in winBleDevice.adStructures ?? <AdStructure>[])
+                  if (advStructures.type == 0x20 &&
+                      advStructures.data.length >= 4)
+                    Guid(hexToId(advStructures.data.sublist(0, 4).reversed)):
+                        advStructures.data.sublist(4),
+                for (final advStructures
+                    in winBleDevice.adStructures ?? <AdStructure>[])
+                  if (advStructures.type == 0x21 &&
+                      advStructures.data.length >= 16)
+                    Guid(hexToId(advStructures.data.sublist(0, 16).reversed)):
+                        advStructures.data.sublist(16),
               },
               serviceUuids: serviceUuids,
               appearance: null,
@@ -273,16 +346,22 @@ class FlutterBluePlusWindows {
           );
 
           // filter with services
-          final isFilteredWithServices =
-              withServices.isNotEmpty && serviceUuids.where((service) => withServices.contains(service)).isEmpty;
+          final isFilteredWithServices = withServices.isNotEmpty &&
+              serviceUuids
+                  .where((service) => withServices.contains(service))
+                  .isEmpty;
 
           // filter with remote ids
-          final isFilteredWithRemoteIds = withRemoteIds.isNotEmpty && !withRemoteIds.contains(remoteId);
+          final isFilteredWithRemoteIds =
+              withRemoteIds.isNotEmpty && !withRemoteIds.contains(remoteId);
 
           // filter with names
-          final isFilteredWithNames = withNames.isNotEmpty && !withNames.contains(deviceName);
+          final isFilteredWithNames =
+              withNames.isNotEmpty && !withNames.contains(deviceName);
 
-          if (isFilteredWithServices || isFilteredWithRemoteIds || isFilteredWithNames) {
+          if (isFilteredWithServices ||
+              isFilteredWithRemoteIds ||
+              isFilteredWithNames) {
             _scanResultsList.add(List.from(output));
             return;
           }
@@ -350,4 +429,10 @@ class FlutterBluePlusWindows {
     await _initialize();
     return await WinBle.bleState.asBroadcastStream().first == BleState.On;
   }
+}
+
+class FbpIsolateActivator {
+  final ByteData bytes;
+
+  FbpIsolateActivator(this.bytes);
 }

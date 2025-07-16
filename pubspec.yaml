@@ -11,3 +11,9 @@ dependencies:
   flutter_blue_plus: ">=1.32.4 <1.35.0"
   win_ble: ">=1.1.1"
   stream_with_value: ">=0.5.0"
+  path: ^1.9.1
+
+
+flutter:
+  assets:
+    - packages/flutter_blue_plus_windows/assets/BLEServer.exe
