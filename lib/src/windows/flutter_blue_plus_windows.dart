@@ -73,23 +73,13 @@ class FlutterBluePlusWindows {
   static Future<void> _initialize() async {
     if (_initialized) return;
 
-    // final scriptUri = Platform.script;
-    // final scriptPath = scriptUri.toFilePath(windows: Platform.isWindows);
-    // final libRoot = path.dirname(scriptPath);
-    // const executableName = 'BLEServer.exe';
-    // final exePath = path.join(libRoot, 'temp', executableName);
-    // final exe = File(exePath);
-    // if (!await exe.exists()) {
-    //   final bytes = await rootBundle.load('packages/win_ble/assets/');
-    // }
-
     // check if it should run in isolated mode
     if (_activator != null) {
       final bytes = _activator!.bytes;
 
       String tempPath = (await getTemporaryDirectory()).path;
       var filePath = path.join(tempPath, 'BLEServer.exe');
-      File(filePath).writeAsBytes(
+      await File(filePath).writeAsBytes(
           bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes));
 
       await WinBle.initialize(serverPath: filePath, enableLog: false);
