@@ -1,3 +1,29 @@
+## Fork to add the ability to use bluetooth on windows from a non-root Isolate
+
+This fork adds some logic to be able to use `FlutterBluePlus` from a background isolate. To do this one has to create an activation Object, containing necessary information, to in the **root-isolate**:
+```dart
+final IsolateActivator activator = await FlutterBluePlusWindows.prepareIsolateActivation();
+```
+This activation object then has to be send somehow to the background isolate:
+```dart
+// at creation:
+await Isolate.run(() => bluetoothFunction(activator));
+
+// or via a send port
+sendPort.send(activator);
+```
+
+In the **background isolate** use:
+```dart
+// e.g. get the activator object via a receive stream:
+final IsolateActivator activator = await receivePortStream.first as IsolateActivator;
+// activate the library
+await FlutterBluerPlusWindows.activateIsolate(activator);
+```
+
+---
+---
+
 [![pub package](https://img.shields.io/pub/v/flutter_blue_plus_windows.svg)](https://pub.dartlang.org/packages/flutter_blue_plus_windows)
 
 ## Flutter Blue Plus Windows
