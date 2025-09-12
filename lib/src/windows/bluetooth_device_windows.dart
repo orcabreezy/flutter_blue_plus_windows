@@ -252,6 +252,7 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
   }
 
   Future<void> createBond({
+    Uint8List? pin, // TODO: implementation missing
     int timeout = 90, // TODO: implementation missing
   }) async {
     try {
