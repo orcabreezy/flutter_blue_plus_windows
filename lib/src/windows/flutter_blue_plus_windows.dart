@@ -144,7 +144,7 @@ class FlutterBluePlusWindows {
                     _removedDeviceTracer.remove(device);
                     return;
                   }
-                  event.connect();
+                  event.connect(license: FlutterBluePlus.license);
                 },
               );
             }
@@ -239,6 +239,7 @@ class FlutterBluePlusWindows {
     bool androidLegacy = false,
     AndroidScanMode androidScanMode = AndroidScanMode.lowLatency,
     bool androidUsesFineLocation = false,
+    required int instanceId,
   }) async {
     await _initialize();
 
@@ -314,7 +315,8 @@ class FlutterBluePlusWindows {
           FlutterBluePlusWindows._advNames[remoteId] = deviceName;
           FlutterBluePlusWindows._rssiMap[remoteId] = rssi;
 
-          final device = BluetoothDeviceWindows(remoteId: remoteId);
+          final device = BluetoothDeviceWindows(
+              remoteId: remoteId, instanceId: instanceId);
 
           String hex(int value) => value.toRadixString(16).padLeft(2, '0');
           String hexToId(Iterable<int> values) =>
