@@ -63,6 +63,8 @@ class FlutterBluePlus {
     );
   }
 
+  /// Set the [license] used throughout this dart instance. Later accessible
+  /// via `FlutterBluePlus.license` e.g. when using `connect(license: ...)`.
   static void setLicense(License license) {
     FlutterBluePlus.license = license;
   }
