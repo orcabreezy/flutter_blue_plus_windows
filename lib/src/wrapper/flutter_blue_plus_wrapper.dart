@@ -7,7 +7,17 @@ import 'package:flutter_blue_plus_windows/flutter_blue_plus_windows.dart';
 int _instanceId = 0;
 
 class FlutterBluePlus {
-  static late final License license;
+  static late final License _license;
+
+  static License get license {
+    try {
+      return FlutterBluePlus._license;
+    } catch (LateInitializationError) {
+      throw Exception('FlutterBluePlus license has not been set, call '
+          'FlutterBluePlus.setLicense() before accessing '
+          'FlutterBluePlus.license');
+    }
+  }
 
   static Future<void> startScan({
     List<Guid> withServices = const [],
@@ -66,7 +76,7 @@ class FlutterBluePlus {
   /// Set the [license] used throughout this dart instance. Later accessible
   /// via `FlutterBluePlus.license` e.g. when using `connect(license: ...)`.
   static void setLicense(License license) {
-    FlutterBluePlus.license = license;
+    FlutterBluePlus._license = license;
   }
 
   static Stream<BluetoothAdapterState> get adapterState {
