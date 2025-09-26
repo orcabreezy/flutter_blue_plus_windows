@@ -4,7 +4,21 @@ import 'dart:io';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart' as FBP;
 import 'package:flutter_blue_plus_windows/flutter_blue_plus_windows.dart';
 
+int _instanceId = 0;
+
 class FlutterBluePlus {
+  static late final License _license;
+
+  static License get license {
+    try {
+      return FlutterBluePlus._license;
+    } catch (LateInitializationError) {
+      throw Exception('FlutterBluePlus license has not been set, call '
+          'FlutterBluePlus.setLicense() before accessing '
+          'FlutterBluePlus.license');
+    }
+  }
+
   static Future<void> startScan({
     List<Guid> withServices = const [],
     List<String> withRemoteIds = const [],
@@ -37,6 +51,7 @@ class FlutterBluePlus {
         androidLegacy: androidLegacy,
         androidScanMode: androidScanMode,
         androidUsesFineLocation: androidUsesFineLocation,
+        instanceId: _instanceId++,
       );
     }
 
@@ -56,6 +71,12 @@ class FlutterBluePlus {
       androidScanMode: androidScanMode,
       androidUsesFineLocation: androidUsesFineLocation,
     );
+  }
+
+  /// Set the [license] used throughout this dart instance. Later accessible
+  /// via `FlutterBluePlus.license` e.g. when using `connect(license: ...)`.
+  static void setLicense(License license) {
+    FlutterBluePlus._license = license;
   }
 
   static Stream<BluetoothAdapterState> get adapterState {
@@ -84,16 +105,19 @@ class FlutterBluePlus {
   }
 
   static Future<void> setLogLevel(LogLevel level, {color = true}) async {
-    if (Platform.isWindows) return FlutterBluePlusWindows.setLogLevel(level, color: color);
+    if (Platform.isWindows)
+      return FlutterBluePlusWindows.setLogLevel(level, color: color);
     return FBP.FlutterBluePlus.setLogLevel(level, color: color);
   }
 
   /// TODO: need to verify
   static LogLevel get logLevel => FBP.FlutterBluePlus.logLevel;
 
-  static Future<void> setOptions({bool restoreState = false, bool showPowerAlert = true}) async {
+  static Future<void> setOptions(
+      {bool restoreState = false, bool showPowerAlert = true}) async {
     if (Platform.isWindows) return;
-    FBP.FlutterBluePlus.setOptions(restoreState: restoreState, showPowerAlert: showPowerAlert);
+    FBP.FlutterBluePlus.setOptions(
+        restoreState: restoreState, showPowerAlert: showPowerAlert);
   }
 
   static Future<bool> get isSupported async {
@@ -107,7 +131,8 @@ class FlutterBluePlus {
   }
 
   static Future<void> turnOn({int timeout = 60}) async {
-    if (Platform.isWindows) return await FlutterBluePlusWindows.turnOn(timeout: timeout);
+    if (Platform.isWindows)
+      return await FlutterBluePlusWindows.turnOn(timeout: timeout);
     return await FBP.FlutterBluePlus.turnOn(timeout: timeout);
   }
 
@@ -116,7 +141,8 @@ class FlutterBluePlus {
     return FBP.FlutterBluePlus.connectedDevices;
   }
 
-  static Future<List<FBP.BluetoothDevice>> systemDevices(List<Guid> withServices) async {
+  static Future<List<FBP.BluetoothDevice>> systemDevices(
+      List<Guid> withServices) async {
     //TODO: connected devices => system devices
     if (Platform.isWindows) return FlutterBluePlusWindows.connectedDevices;
     return await FBP.FlutterBluePlus.systemDevices(withServices);
@@ -132,7 +158,8 @@ class FlutterBluePlus {
   }
 
   static void cancelWhenScanComplete(StreamSubscription subscription) {
-    if (Platform.isWindows) return FlutterBluePlusWindows.cancelWhenScanComplete(subscription);
+    if (Platform.isWindows)
+      return FlutterBluePlusWindows.cancelWhenScanComplete(subscription);
     return FBP.FlutterBluePlus.cancelWhenScanComplete(subscription);
   }
 }

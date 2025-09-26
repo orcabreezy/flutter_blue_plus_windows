@@ -4,7 +4,8 @@
 part of 'windows.dart';
 
 class BluetoothDeviceWindows extends FBP.BluetoothDevice {
-  BluetoothDeviceWindows({required super.remoteId});
+  final int instanceId;
+  BluetoothDeviceWindows({required super.remoteId, required this.instanceId});
 
   // used for 'servicesStream' public api
   final _services = StreamController<List<BluetoothServiceWindows>>.broadcast();
@@ -18,9 +19,11 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
   ///   - to connect, this device must have been discovered by your app in a previous scan
   ///   - iOS uses 128-bit uuids the remoteId, e.g. e006b3a7-ef7b-4980-a668-1f8005f84383
   ///   - Android uses 48-bit mac addresses as the remoteId, e.g. 06:E5:28:3B:FD:E0
-  static FBP.BluetoothDevice fromId(String remoteId) {
+  static FBP.BluetoothDevice fromId(String remoteId, int instanceId) {
     if (Platform.isWindows) {
-      return BluetoothDeviceWindows(remoteId: DeviceIdentifier(remoteId.toUpperCase()));
+      return BluetoothDeviceWindows(
+          remoteId: DeviceIdentifier(remoteId.toUpperCase()),
+          instanceId: instanceId);
     }
     return FBP.BluetoothDevice.fromId(remoteId);
   }
@@ -31,7 +34,8 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
   /// - iOS: after you connect, iOS uses the GAP name characteristic (0x2A00)
   ///        if it exists. Otherwise iOS use the advertised name.
   /// - Android: always uses the advertised name
-  String get platformName => FlutterBluePlusWindows._platformNames[remoteId] ?? "";
+  String get platformName =>
+      FlutterBluePlusWindows._platformNames[remoteId] ?? "";
 
   /// Advertised Named
   ///  - this is the name advertised by the device during scanning
@@ -41,17 +45,20 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
   String get advName => FlutterBluePlusWindows._advNames[remoteId] ?? "";
 
   // stream return whether or not we are currently discovering services
-  @Deprecated("planed for removal (Jan 2024). It can be easily implemented yourself") // deprecated on Aug 2023
+  @Deprecated(
+      "planed for removal (Jan 2024). It can be easily implemented yourself") // deprecated on Aug 2023
   Stream<bool> get isDiscoveringServices => _isDiscoveringServices.stream;
 
   /// Get services
   ///  - returns empty if discoverServices() has not been called
   ///    or if your device does not have any services (rare)
-  List<BluetoothServiceWindows> get servicesList => FlutterBluePlusWindows._knownServices[remoteId] ?? [];
+  List<BluetoothServiceWindows> get servicesList =>
+      FlutterBluePlusWindows._knownServices[remoteId] ?? [];
 
   /// Stream of bluetooth services offered by the remote device
   ///   - this stream is only updated when you call discoverServices()
-  @Deprecated("planed for removal (Jan 2024). It can be easily implemented yourself") // deprecated on Aug 2023
+  @Deprecated(
+      "planed for removal (Jan 2024). It can be easily implemented yourself") // deprecated on Aug 2023
   Stream<List<BluetoothService>> get servicesStream {
     if (FlutterBluePlusWindows._knownServices[remoteId] != null) {
       return _services.stream.newStreamWithInitialValue(
@@ -71,7 +78,8 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
   ///   - [delayed] Note: This option is only meant for `connectionState` subscriptions.
   ///     When `true`, we cancel after a small delay. This ensures the `connectionState`
   ///     listener receives the `disconnected` event.
-  void cancelWhenDisconnected(StreamSubscription subscription, {bool next = false, bool delayed = false}) {
+  void cancelWhenDisconnected(StreamSubscription subscription,
+      {bool next = false, bool delayed = false}) {
     if (isConnected == false && next == false) {
       subscription.cancel(); // cancel immediately if already disconnected.
     } else if (delayed) {
@@ -92,7 +100,9 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
   bool get isDisconnected => isConnected == false;
 
   Future<void> connect({
-    Duration? timeout = const Duration(seconds: 35), // TODO: implementation missing
+    required License license,
+    Duration? timeout =
+        const Duration(seconds: 35), // TODO: implementation missing
     bool autoConnect = false, // TODO: implementation missing
     int? mtu = 512, // TODO: implementation missing
   }) async {
@@ -116,11 +126,13 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
     } finally {
       FlutterBluePlusWindows._deviceSet.remove(this);
 
-      FlutterBluePlusWindows._deviceSubscriptions[remoteId]?.forEach((s) => s.cancel());
+      FlutterBluePlusWindows._deviceSubscriptions[remoteId]
+          ?.forEach((s) => s.cancel());
       FlutterBluePlusWindows._deviceSubscriptions.remove(remoteId);
       // use delayed to update the stream before we cancel it
       Future.delayed(Duration.zero).then((_) {
-        FlutterBluePlusWindows._delayedSubscriptions[remoteId]?.forEach((s) => s.cancel());
+        FlutterBluePlusWindows._delayedSubscriptions[remoteId]
+            ?.forEach((s) => s.cancel());
         FlutterBluePlusWindows._delayedSubscriptions.remove(remoteId);
       });
 
@@ -133,13 +145,15 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
     bool subscribeToServicesChanged = true, // TODO: implementation missing
     int timeout = 15, // TODO: implementation missing
   }) async {
-    List<BluetoothServiceWindows> result = List.from(FlutterBluePlusWindows._knownServices[remoteId] ?? []);
+    List<BluetoothServiceWindows> result =
+        List.from(FlutterBluePlusWindows._knownServices[remoteId] ?? []);
 
     try {
       _isDiscoveringServices.add(true);
 
       final response = await WinBle.discoverServices(_address);
-      FlutterBluePlusWindows._characteristicCache[remoteId] ??= <String, List<BluetoothCharacteristic>>{};
+      FlutterBluePlusWindows._characteristicCache[remoteId] ??=
+          <String, List<BluetoothCharacteristic>>{};
 
       for (final serviceId in response) {
         final characteristic = await WinBle.discoverCharacteristics(
@@ -150,6 +164,7 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
         FlutterBluePlusWindows._characteristicCache[remoteId]?[serviceId] ??= [
           ...characteristic.map(
             (e) => BluetoothCharacteristicWindows(
+              instanceId: instanceId,
               remoteId: remoteId,
               serviceUuid: Guid(serviceId),
               characteristicUuid: Guid(e.uuid),
@@ -164,12 +179,14 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
       result = [
         ...response.map(
           (p) => BluetoothServiceWindows(
+            instanceId: instanceId,
             remoteId: remoteId,
             serviceUuid: Guid(p),
             // TODO: implementation missing
             isPrimary: true,
             // TODO: implementation missing
-            characteristics: FlutterBluePlusWindows._characteristicCache[remoteId]![p]!,
+            characteristics:
+                FlutterBluePlusWindows._characteristicCache[remoteId]![p]!,
             // TODO: implementation missing
             includedServices: [],
           ),
@@ -279,7 +296,9 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is BluetoothDeviceWindows && runtimeType == other.runtimeType && remoteId == other.remoteId);
+      (other is BluetoothDeviceWindows &&
+          runtimeType == other.runtimeType &&
+          remoteId == other.remoteId);
 
   @override
   int get hashCode => remoteId.hashCode;
