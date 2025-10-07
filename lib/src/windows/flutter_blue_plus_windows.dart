@@ -86,6 +86,9 @@ class FlutterBluePlusWindows {
 
   static Future<void> _initialize() async {
     if (_initialized) return;
+    // immediately set as initialized, to prevent duplicate initialization
+    // from get adapterState, which cannot be properly awaited.
+    _initialized = true;
 
     // check if it should run in isolated mode
     if (_activator != null) {
