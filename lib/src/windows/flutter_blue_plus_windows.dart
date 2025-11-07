@@ -84,6 +84,9 @@ class FlutterBluePlusWindows {
     _activator = activator;
   }
 
+  static Map<BluetoothDeviceWindows, StreamSubscription> get lostDeviceTracers =>
+      _removedDeviceTracer;
+
   static Future<void> _initialize() async {
     if (_initialized) return;
     // immediately set as initialized, to prevent duplicate initialization
