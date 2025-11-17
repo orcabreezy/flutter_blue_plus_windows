@@ -21,7 +21,11 @@ final IsolateActivator activator = await receivePortStream.first as IsolateActiv
 await FlutterBluerPlusWindows.activateIsolate(activator);
 ```
 
----
+### Other Changes and Fixes:
+- When a device spontaneously looses its connection, calling `.discconect()` will disable auto-reconnect for that device
+- The Characteristic read-stream is fixed, that it cannot be triggered by other devices with the same characteristics
+
+
 ---
 
 [![pub package](https://img.shields.io/pub/v/flutter_blue_plus_windows.svg)](https://pub.dartlang.org/packages/flutter_blue_plus_windows)
