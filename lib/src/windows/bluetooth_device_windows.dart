@@ -119,11 +119,21 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
     int timeout = 35, // TODO: implementation missing
     bool queue = true, // TODO: implementation missing
   }) async {
+    // If Device was lost, remove the tracer.
+    if (FlutterBluePlusWindows.lostDeviceTracers.containsKey(this)) {
+      FlutterBluePlusWindows.lostDeviceTracers[this]!.cancel();
+      log('fbp: remove lost device tracer for $remoteId');
+
+      // Return as device is already lost.
+      return;
+    }
+
     try {
       await WinBle.disconnect(_address);
     } catch (e) {
       log(e.toString());
     } finally {
+      log('fbp: remove device from set...');
       FlutterBluePlusWindows._deviceSet.remove(this);
 
       FlutterBluePlusWindows._deviceSubscriptions[remoteId]

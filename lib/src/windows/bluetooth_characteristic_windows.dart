@@ -59,6 +59,7 @@ class BluetoothCharacteristicWindows extends BluetoothCharacteristic {
   String get _address => remoteId.str.toLowerCase();
 
   String get _key => "$serviceUuid:$characteristicUuid";
+  String get _keyWithAddress => "$_address:$_key";
 
   FBP.BluetoothDevice get device => FlutterBluePlusWindows.connectedDevices
       .firstWhere((device) => device.remoteId == remoteId);
@@ -83,7 +84,7 @@ class BluetoothCharacteristicWindows extends BluetoothCharacteristic {
             characteristicId: characteristicUuid.str128,
           ),
           FlutterBluePlusWindows._charReadWriteStream
-              .where((e) => e.$1 == _key)
+              .where((e) => e.$1 == _keyWithAddress)
               .map((e) => e.$2)
         ],
       )
@@ -102,7 +103,7 @@ class BluetoothCharacteristicWindows extends BluetoothCharacteristic {
             characteristicId: characteristicUuid.str128,
           ),
           FlutterBluePlusWindows._charReadStream
-              .where((e) => e.$1 == _key)
+              .where((e) => e.$1 == _keyWithAddress)
               .map((e) => e.$2)
         ],
       ).map((p) => <int>[...p]).asBroadcastStream();
@@ -117,8 +118,10 @@ class BluetoothCharacteristicWindows extends BluetoothCharacteristic {
       serviceId: serviceUuid.str128,
       characteristicId: characteristicUuid.str128,
     );
-    FlutterBluePlusWindows._charReadWriteStreamController.add((_key, value));
-    FlutterBluePlusWindows._charReadStreamController.add((_key, value));
+    FlutterBluePlusWindows._charReadWriteStreamController
+        .add((_keyWithAddress, value));
+    FlutterBluePlusWindows._charReadStreamController
+        .add((_keyWithAddress, value));
     FlutterBluePlusWindows._lastChrs[remoteId] ??= {};
     FlutterBluePlusWindows._lastChrs[remoteId]?[_key] = value;
     return value;
