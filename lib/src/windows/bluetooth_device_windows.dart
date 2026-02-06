@@ -22,8 +22,9 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
   static FBP.BluetoothDevice fromId(String remoteId, int instanceId) {
     if (Platform.isWindows) {
       return BluetoothDeviceWindows(
-          remoteId: DeviceIdentifier(remoteId.toUpperCase()),
-          instanceId: instanceId);
+        remoteId: DeviceIdentifier(remoteId.toUpperCase()),
+        instanceId: instanceId,
+      );
     }
     return FBP.BluetoothDevice.fromId(remoteId);
   }
@@ -46,7 +47,8 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
 
   // stream return whether or not we are currently discovering services
   @Deprecated(
-      "planed for removal (Jan 2024). It can be easily implemented yourself") // deprecated on Aug 2023
+    "planed for removal (Jan 2024). It can be easily implemented yourself",
+  ) // deprecated on Aug 2023
   Stream<bool> get isDiscoveringServices => _isDiscoveringServices.stream;
 
   /// Get services
@@ -58,7 +60,8 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
   /// Stream of bluetooth services offered by the remote device
   ///   - this stream is only updated when you call discoverServices()
   @Deprecated(
-      "planed for removal (Jan 2024). It can be easily implemented yourself") // deprecated on Aug 2023
+    "planed for removal (Jan 2024). It can be easily implemented yourself",
+  ) // deprecated on Aug 2023
   Stream<List<BluetoothService>> get servicesStream {
     if (FlutterBluePlusWindows._knownServices[remoteId] != null) {
       return _services.stream.newStreamWithInitialValue(
@@ -78,8 +81,11 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
   ///   - [delayed] Note: This option is only meant for `connectionState` subscriptions.
   ///     When `true`, we cancel after a small delay. This ensures the `connectionState`
   ///     listener receives the `disconnected` event.
-  void cancelWhenDisconnected(StreamSubscription subscription,
-      {bool next = false, bool delayed = false}) {
+  void cancelWhenDisconnected(
+    StreamSubscription subscription, {
+    bool next = false,
+    bool delayed = false,
+  }) {
     if (isConnected == false && next == false) {
       subscription.cancel(); // cancel immediately if already disconnected.
     } else if (delayed) {
@@ -101,8 +107,9 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
 
   Future<void> connect({
     required License license,
-    Duration? timeout =
-        const Duration(seconds: 35), // TODO: implementation missing
+    Duration? timeout = const Duration(
+      seconds: 35,
+    ), // TODO: implementation missing
     bool autoConnect = false, // TODO: implementation missing
     int? mtu = 512, // TODO: implementation missing
   }) async {
@@ -110,7 +117,7 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
       await WinBle.connect(_address);
       FlutterBluePlusWindows._deviceSet.add(this);
     } catch (e) {
-      log(e.toString());
+      log("error during connect attempt: ${e.toString()}");
     }
   }
 
@@ -131,18 +138,20 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
     try {
       await WinBle.disconnect(_address);
     } catch (e) {
-      log(e.toString());
+      log("error during disconnect attempt ${e.toString()}");
     } finally {
       log('fbp: remove device from set...');
       FlutterBluePlusWindows._deviceSet.remove(this);
 
-      FlutterBluePlusWindows._deviceSubscriptions[remoteId]
-          ?.forEach((s) => s.cancel());
+      FlutterBluePlusWindows._deviceSubscriptions[remoteId]?.forEach(
+        (s) => s.cancel(),
+      );
       FlutterBluePlusWindows._deviceSubscriptions.remove(remoteId);
       // use delayed to update the stream before we cancel it
       Future.delayed(Duration.zero).then((_) {
-        FlutterBluePlusWindows._delayedSubscriptions[remoteId]
-            ?.forEach((s) => s.cancel());
+        FlutterBluePlusWindows._delayedSubscriptions[remoteId]?.forEach(
+          (s) => s.cancel(),
+        );
         FlutterBluePlusWindows._delayedSubscriptions.remove(remoteId);
       });
 
@@ -155,8 +164,9 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
     bool subscribeToServicesChanged = true, // TODO: implementation missing
     int timeout = 15, // TODO: implementation missing
   }) async {
-    List<BluetoothServiceWindows> result =
-        List.from(FlutterBluePlusWindows._knownServices[remoteId] ?? []);
+    List<BluetoothServiceWindows> result = List.from(
+      FlutterBluePlusWindows._knownServices[remoteId] ?? [],
+    );
 
     try {
       _isDiscoveringServices.add(true);
@@ -200,7 +210,7 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
             // TODO: implementation missing
             includedServices: [],
           ),
-        )
+        ),
       ];
 
       FlutterBluePlusWindows._knownServices[remoteId] = result;
@@ -240,7 +250,7 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
         isEmitted = true;
       } catch (e) {
         await Future.delayed(const Duration(milliseconds: 500));
-        log(e.toString());
+        log("error during MTU discovery: ${e.toString()}");
       }
     }
   }
@@ -285,7 +295,7 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
     try {
       await WinBle.pair(_address);
     } catch (e) {
-      log(e.toString());
+      log("error during pair attempt: ${e.toString()}");
     }
   }
 
@@ -295,7 +305,7 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
     try {
       await WinBle.unPair(_address);
     } catch (e) {
-      log(e.toString());
+      log("error during unpair attempt: ${e.toString()}");
     }
   }
 

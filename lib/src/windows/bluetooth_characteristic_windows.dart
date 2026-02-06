@@ -174,7 +174,7 @@ class BluetoothCharacteristicWindows extends BluetoothCharacteristic {
       FlutterBluePlusWindows._isNotifying[remoteId] ??= {};
       FlutterBluePlusWindows._isNotifying[remoteId]?[_key] = notify;
     } catch (e) {
-      log(e.toString());
+      log("error during subscribeToCharacteristic ${e.toString()}");
     }
     return true;
   }
