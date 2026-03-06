@@ -141,6 +141,10 @@ class BluetoothDeviceWindows extends FBP.BluetoothDevice {
       log("error during disconnect attempt ${e.toString()}");
     } finally {
       log('fbp: remove device from set...');
+      final map = FlutterBluePlusWindows._connectionStream.latestValue;
+      map[_address] = false;              // mark as disconnected in the cache
+      FlutterBluePlusWindows._connectionStream.add(map);
+      log('fbp: remove device from set...');
       FlutterBluePlusWindows._deviceSet.remove(this);
 
       FlutterBluePlusWindows._deviceSubscriptions[remoteId]?.forEach(
